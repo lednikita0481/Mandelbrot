@@ -15,24 +15,25 @@ const float DX = 2*X_MAX/WINDOW_WIDTH;
 const float DY = 2*Y_MAX/WINDOW_HEIGHTH;
 
 void Draw_Mandelbrot(sf::Texture* Google_Pixel, float x_mov, float y_mov);
-void Draw_Mandelbrot_AVX(sf::Texture* Google_Pixel, float x_mov, float y_mov);
+void Draw_Mandelbrot_AVX(sf::Texture* Google_Pixel, float x_mov, float y_mov, float scale);
 
 int main()
 {
     //printf("%d %d %f %f %f %f %f", WINDOW_WIDTH, WINDOW_HEIGHTH, X_MAX, Y_MAX, MAX_DISTANCE, DX, DY);
     sf::RenderWindow window(sf::VideoMode(WINDOW_WIDTH, WINDOW_HEIGHTH), "Mandelbrot!", sf::Style::Close);
     printf("%d %d %f %f %f %f %f\n", WINDOW_WIDTH, WINDOW_HEIGHTH, X_MAX, Y_MAX, MAX_DISTANCE, DX, DY);
-    
+
+    float x_mov = 0;
+    float y_mov = 0;
+    float scale = 1.0;
 
     sf::Texture texture;
     texture.create(WINDOW_WIDTH, WINDOW_HEIGHTH);
-    Draw_Mandelbrot_AVX(&texture, 0, 0);
+    Draw_Mandelbrot_AVX(&texture, x_mov, y_mov, scale);
     printf("Kuku %d\n", sizeof(sf::Uint8));
     sf::RectangleShape mandelbrot(sf::Vector2f(WINDOW_WIDTH, WINDOW_HEIGHTH));
     mandelbrot.setTexture(&texture);
 
-    float x_mov = 0;
-    float y_mov = 0;
     while (window.isOpen())
     {
         sf::Event event;
@@ -43,6 +44,7 @@ int main()
             
             float x_mov_old = x_mov;
             float y_mov_old = y_mov;
+            float scale_old = scale;
             
             if (sf::Keyboard::isKeyPressed(sf::Keyboard::Left))
                 x_mov -= 0.1;
@@ -52,14 +54,25 @@ int main()
                 y_mov += 0.1;
             if (sf::Keyboard::isKeyPressed(sf::Keyboard::Down))
                 y_mov -= 0.1;
-
-            if (x_mov_old != x_mov || y_mov_old != y_mov)
+            if (sf::Keyboard::isKeyPressed(sf::Keyboard::F2))
+            {
+                scale *= 1.25f;
+                x_mov /= 1.25f;
+                y_mov /= 1.25f;
+            }
+            if (sf::Keyboard::isKeyPressed(sf::Keyboard::F1))
+            {
+                scale /= 1.25f;
+                x_mov *= 1.25f;
+                y_mov *= 1.25f;
+            }
+            if (x_mov_old != x_mov || y_mov_old != y_mov || scale_old != scale)
             {   
-                if (x_mov >= 2*X_MAX) x_mov -= 2*X_MAX;
-                if (y_mov >= 2*Y_MAX) y_mov -= 2*Y_MAX;
-                if (x_mov <= -2*X_MAX) x_mov += 2*X_MAX;
-                if (y_mov <= -2*Y_MAX) y_mov += 2*Y_MAX;
-                Draw_Mandelbrot_AVX(&texture, x_mov, y_mov);
+                if (x_mov >= 2*X_MAX/scale) x_mov -= 2*X_MAX/scale;
+                if (y_mov >= 2*Y_MAX/scale) y_mov -= 2*Y_MAX/scale;
+                if (x_mov <= -2*X_MAX/scale) x_mov += 2*X_MAX/scale;
+                if (y_mov <= -2*Y_MAX/scale) y_mov += 2*Y_MAX/scale;
+                Draw_Mandelbrot_AVX(&texture, x_mov, y_mov, scale);
             }
 
 
@@ -117,14 +130,19 @@ void Draw_Mandelbrot(sf::Texture* Google_Pixel, float x_mov, float y_mov)
     //Google_Pixel->loadFromImage(image);
 }
 
-void Draw_Mandelbrot_AVX(sf::Texture* Google_Pixel, float x_mov, float y_mov)
+void Draw_Mandelbrot_AVX(sf::Texture* Google_Pixel, float x_mov, float y_mov, float scale)
 {
     static sf::Uint8 pixels[4*WINDOW_WIDTH*WINDOW_HEIGHTH] = {};
+
+    float NEW_X_MAX = scale*X_MAX;
+    float NEW_Y_MAX = scale*Y_MAX;
+    float NEW_DX = 2*NEW_X_MAX/WINDOW_WIDTH;
+    float NEW_DY = 2*NEW_Y_MAX/WINDOW_HEIGHTH;
 
 
     for (int y0_window = 0; y0_window < WINDOW_HEIGHTH; y0_window++)
     {
-        __m256 y0_avx = _mm256_set1_ps((((2*Y_MAX)) * ((float)y0_window/(float)WINDOW_HEIGHTH)) - Y_MAX + y_mov);
+        __m256 y0_avx = _mm256_set1_ps((((2*NEW_Y_MAX)) * ((float)y0_window/(float)WINDOW_HEIGHTH)) - NEW_Y_MAX + scale*y_mov);
         __m256 y_max_avx = _mm256_set1_ps(Y_MAX);
         __m256 min_y_max_avx = _mm256_set1_ps(-Y_MAX);
 
@@ -145,9 +163,9 @@ void Draw_Mandelbrot_AVX(sf::Texture* Google_Pixel, float x_mov, float y_mov)
 
         for (int x0_window = 0; x0_window < WINDOW_WIDTH; x0_window+=8)
         {
-            __m256 x0_avx = _mm256_set1_ps((((2*X_MAX))* ((float)x0_window / (float)WINDOW_WIDTH)) - X_MAX - x_mov);
+            __m256 x0_avx = _mm256_set1_ps((((2*NEW_X_MAX))* ((float)x0_window / (float)WINDOW_WIDTH)) - NEW_X_MAX - scale*x_mov);
             //__m256 x0_avx_offset = _mm256_setr_ps(7*DX, 6*DX, 5*DX, 4*DX, 3*DX, 2*DX, DX, 0);
-            __m256 x0_avx_offset = _mm256_setr_ps(0, DX, 2*DX, 3*DX, 4*DX, 5*DX, 6*DX, 7*DX);
+            __m256 x0_avx_offset = _mm256_setr_ps(0, NEW_DX, 2*NEW_DX, 3*NEW_DX, 4*NEW_DX, 5*NEW_DX, 6*NEW_DX, 7*NEW_DX);
 
             x0_avx = _mm256_add_ps(x0_avx, x0_avx_offset);
 
