@@ -176,8 +176,8 @@ void Draw_Mandelbrot(sf::Texture* Google_Pixel, float x_mov, float y_mov, float 
 void Draw_Mandelbrot_AVX(sf::Texture* Google_Pixel, float x_mov, float y_mov, float scale)
 {
     #ifndef NO_DRAW
-    sf::Uint8 pixels[4*WINDOW_WIDTH*WINDOW_HEIGHTH] = {};
-    //sf::Image image = Google_Pixel->copyToImage();
+    //sf::Uint8 pixels[4*WINDOW_WIDTH*WINDOW_HEIGHTH] = {};
+    sf::Image image = Google_Pixel->copyToImage();
     #endif
 
     float NEW_X_MAX = scale*X_MAX;
@@ -288,13 +288,15 @@ void Draw_Mandelbrot_AVX(sf::Texture* Google_Pixel, float x_mov, float y_mov, fl
             #ifndef NO_DRAW
             for (int j = 0; j < 8; j++)
             {
+                /*
                 int i = 4*((WINDOW_WIDTH * y0_window) + x0_window) + 4*j;
                 pixels[i] = (sf::Uint8) 2*iter_array[j];
                 pixels[i+1] = (sf::Uint8) 2*iter_array[j];
                 pixels[i+2] = (sf::Uint8) 2*iter_array[j];
                 pixels[i+3] = (sf::Uint8) 255;
+                */
 
-                //image.setPixel(x0_window + j, y0_window, sf::Color{2*iter_array[j], 2*iter_array[j], 2*iter_array[j], 255});
+                image.setPixel(x0_window + j, y0_window, sf::Color{2*iter_array[j], 2*iter_array[j], 2*iter_array[j], 255});
             }
             #endif
 
@@ -303,9 +305,9 @@ void Draw_Mandelbrot_AVX(sf::Texture* Google_Pixel, float x_mov, float y_mov, fl
     }
 
     #ifndef NO_DRAW
-    Google_Pixel->update(pixels);
+    //Google_Pixel->update(pixels);
     #endif
-    //Google_Pixel->update(image);
+    Google_Pixel->update(image);
 }
 
 sf::Text *Set_Text (sf::Font &font, float x_coord, float y_coord) {
