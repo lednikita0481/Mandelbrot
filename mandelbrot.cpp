@@ -42,6 +42,7 @@ int main()
     font.loadFromFile("Disket-Mono-Bold.ttf");
     sf::Text fps_text = *Set_Text (font, 0, 0);
 
+
     while (window.isOpen())
     {
         sf::Event event;
@@ -88,13 +89,16 @@ int main()
             if (y_mov <= -2*Y_MAX/scale) y_mov += 2*Y_MAX/scale;
             Draw_Mandelbrot_AVX(&texture, x_mov, y_mov, scale);
         //}
+        //if (iterations == 30)
+        //{
+            sf::Time elapsed_time = clock.getElapsedTime();
+            char FPS_Text[20];
+            sprintf (FPS_Text, "FPS: %.2f\n", 1/(elapsed_time.asSeconds()));
+            //iterations = 0;
+            //printf("%s\n", FPS_Text);
+            fps_text.setString(FPS_Text);
 
-        sf::Time elapsed_time = clock.getElapsedTime();
-
-        char FPS_Text[20];
-        sprintf (FPS_Text, "FPS: %.2f\n", 1/elapsed_time.asSeconds());
-        printf("%s\n", FPS_Text);
-        fps_text.setString(FPS_Text);
+        //}
 
         #ifndef NO_DRAW
         window.draw(mandelbrot);
